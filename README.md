@@ -1,16 +1,78 @@
-# Azure Keycloak Candidate Test
+# Candidate Test – DevOps Assignment
 
-This project provisions an Azure VM with Terraform, configures it with Ansible, and deploys Keycloak + Postgres + Nginx in Docker containers.
+This project provisions an **Azure VM** and deploys **Keycloak**, **Postgres**, and **Nginx** using **Terraform**, **Ansible**, **Docker Compose**, and **GitHub Actions**.
 
-## Structure
-- `terraform/` – Infrastructure as Code for Azure
-- `ansible/` – Configuration management and container deployment
-- `docker/` – Local docker-compose for development
-- `.github/workflows/` – CI/CD automation with GitHub Actions
-- `docs/` – Architecture diagram and documentation
+---
 
-## Steps to Run
-1. Provision Azure infrastructure (`terraform apply`)
-2. Configure VM (`ansible-playbook`)
-3. Access Keycloak-protected static site in browser
+## Features
+- **Infrastructure as Code (Terraform)** – creates VM, networking, and security rules in Azure  
+- **Configuration Management (Ansible)** – installs Docker and deploys containers  
+- **Authentication (Keycloak + Postgres)** – Keycloak for identity, Postgres as its DB  
+- **Web Server (Nginx)** – serves a static webpage  
+- **CI/CD (GitHub Actions)** – workflows for deploy and destroy  
+- **Documentation** – architecture diagram, justification, and future improvements  
 
+---
+
+## Repository Structure
+.
+├── .github/workflows/ # GitHub Actions CI/CD
+│ ├── deploy.yml
+│ └── destroy.yml
+├── terraform/ # Terraform configs (VM + networking)
+├── ansible/ # Ansible playbooks & roles
+│ ├── inventory.ini
+│ ├── playbook.yml
+│ └── roles/docker-host/
+│ ├── tasks/main.yml
+│ └── files/nginx/site/index.html
+├── diagrams/ # Architecture diagram
+└── README.md # Project documentation
+
+
+---
+
+## How to Deploy
+
+### 1. Trigger Deploy
+- Go to **GitHub → Actions → Deploy Infrastructure → Run workflow**  
+- This runs:
+  - `terraform apply` → provisions Azure VM + networking  
+  - `ansible-playbook` → installs Docker, deploys Keycloak + Postgres + Nginx  
+
+### 2. Access Services
+- **Web Page (Nginx):**  
+  `http://<VM_PUBLIC_IP>/`  
+
+- **Keycloak Admin:**  
+  `http://<VM_PUBLIC_IP>:8080/auth`  
+  - Username: `admin`  
+  - Password: `admin123`  
+
+### 3. Trigger Destroy
+- Go to **GitHub → Actions → Destroy Infrastructure → Run workflow**  
+- This runs `terraform destroy` and tears down all resources.  
+
+---
+
+## Architecture
+
+### Justification
+- A **single Azure VM (free tier)** is used for cost efficiency  
+- **Terraform** provides reproducible infra setup  
+- **Ansible** handles configuration and container deployments  
+- **Docker Compose** groups the services into isolated containers  
+- **GitHub Actions** enables CI/CD automation for consistency  
+- **Networking (NSG)** restricts inbound traffic:  
+  - SSH (22) for admins  
+  - HTTP (80) for Nginx  
+  - HTTP (8080) for Keycloak  
+
+---
+
+##  Suggested Future Features
+- **TLS/HTTPS with Let’s Encrypt** → secure authentication  
+- **Move Postgres to Azure Managed DB** → backups, reliability  
+- **Use Kubernetes (AKS)** → scalability and resilience  
+- **Add Monitoring (Prometheus + Grafana)** → observability  
+- **CI/CD tests before deploy** → safer deployments  
