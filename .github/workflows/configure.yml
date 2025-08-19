@@ -1,0 +1,23 @@
+name: Configure Application on Existing Infrastructure
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ansible/**'  # Runs only if Ansible files change
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i ./ansible/inventory ./ansible/site.yml
