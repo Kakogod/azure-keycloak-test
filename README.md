@@ -87,3 +87,25 @@ This project provisions an **Azure VM** and deploys **Keycloak**, **Postgres**, 
 - **Use Kubernetes (AKS)** → scalability and resilience  
 - **Add Monitoring (Prometheus + Grafana)** → observability  
 - **CI/CD tests before deploy** → safer deployments  
+
+## Notes on Issues Encountered and Resolutions
+1. OAuth2 Proxy Connection Refused
+Issue:
+Initially, the OAuth2 Proxy container was not accessible externally, resulting in connection refused errors when trying to connect to port 4180.
+
+Resolution:
+Added the environment variable OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180" to make OAuth2 Proxy listen on all network interfaces rather than the default localhost. This fixed the connectivity issue allowing external access to OAuth2 Proxy.
+
+2. Keycloak HTTPS Requirement Error
+Issue:
+Keycloak was enforcing HTTPS for authentication but the environment was only accessible over HTTP, leading to "HTTPS required" errors on login.
+
+Resolution:
+Temporarily disabled HTTPS requirement for the Keycloak realm by setting sslRequired=NONE using the Keycloak admin CLI (kcadm.sh). For production, enabling proper HTTPS with certificates is recommended.
+
+3. Incorrect Nginx Configuration
+Issue:
+Nginx was not correctly proxying the auth requests to OAuth2 Proxy, causing authentication failures.
+
+Resolution:
+Created a custom Nginx config (default.conf) with proper auth_request and proxy_pass directives to forward auth requests to OAuth2 Proxy. This configuration was deployed via Ansible and mounted as a volume in the Nginx container.
