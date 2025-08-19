@@ -1,0 +1,30 @@
+name: Disassemble Infrastructure (Terraform Destroy)
+
+on:
+  workflow_dispatch:
+
+env:
+  # Secrets for Azure service principal
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.7'
+
+      - name: Terraform Init
+        run: terraform -chdir=./terraform init
+
+      - name: Terraform Destroy
+        run: terraform -chdir=./terraform destroy -auto-approve
