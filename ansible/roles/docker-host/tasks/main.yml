@@ -1,0 +1,130 @@
+- name: Install required packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+
+- name: Ensure Docker is running
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Install Docker Compose (v2)
+  get_url:
+    url: https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+
+- name: Create application directory
+  file:
+    path: "{{ compose_dest }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ compose_dest }}/docker-compose.yml"
+
+- name: Start containers with docker-compose
+  command: docker-compose up -d
+  args:
+    chdir: "{{ compose_dest }}"
+
+- name: Wait for Keycloak master realm to be ready
+  uri:
+    url: "http://localhost:8080/auth/realms/master"
+    status_code: 200
+  register: kc_check
+  retries: 20
+  delay: 10
+  until: kc_check.status == 200
+
+- name: Configure kcadm credentials
+  shell: >
+    docker exec keycloak
+    /opt/keycloak/bin/kcadm.sh config credentials
+    --server http://localhost:8080/auth
+    --realm master
+    --user admin
+    --password admin123
+
+- name: Disable SSL requirement in master realm
+  shell: >
+    docker exec keycloak
+    /opt/keycloak/bin/kcadm.sh update realms/master -s sslRequired=NONE
+
+- name: Disable SSL requirement in myrealm realm
+  shell: >
+    docker exec keycloak
+    /opt/keycloak/bin/kcadm.sh update realms/myrealm -s sslRequired=NONE
+
+- name: Create nginx directory if not present
+  file:
+    path: /opt/keycloak_app/nginx
+    state: directory
+    mode: '0755'
+
+- name: Deploy custom nginx default.conf with oauth2-proxy auth_request
+  copy:
+    dest: /opt/keycloak_app/nginx/default.conf
+    content: |
+      server {
+          listen 80;
+
+          location = /oauth2/auth {
+              internal;
+              proxy_pass http://oauth2-proxy:4180/oauth2/auth;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Scheme $scheme;
+              proxy_set_header X-Auth-Request-Redirect $request_uri;
+              proxy_pass_request_body off;
+              proxy_set_header Content-Length "";
+              proxy_intercept_errors on;
+          }
+
+          location / {
+              auth_request /oauth2/auth;
+              error_page 401 = @error401;
+              proxy_pass http://nginx:80;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Scheme $scheme;
+          }
+
+          location @error401 {
+              return 302 http://$host/oauth2/start?rd=$request_uri;
+          }
+      }
+  mode: '0644'
+
+- name: Restart containers with docker-compose (after nginx config deployed)
+  command: docker-compose up -d
+  args:
+    chdir: "{{ compose_dest }}"
+

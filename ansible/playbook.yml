@@ -1,0 +1,8 @@
+- hosts: web
+  become: yes
+  vars:
+    compose_dest: /opt/keycloak_app
+    postgres_password: "ChangeMe123!"
+  roles:
+    - docker-host
+
