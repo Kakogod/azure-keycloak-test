@@ -1,0 +1,42 @@
+name: Rollout Infrastructure and Deploy Application
+
+# Triggers: manual run or on push to main branch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  # Secrets for Azure service principal — add these in your repo's Settings > Secrets
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.7'
+
+      - name: Terraform Init
+        run: terraform -chdir=./terraform init
+
+      - name: Terraform Apply
+        run: terraform -chdir=./terraform apply -auto-approve
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Run Ansible Playbook
+        run: ansible-playbook -i ./ansible/inventory ./ansible/site.yml
