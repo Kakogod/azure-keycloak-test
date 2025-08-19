@@ -17,16 +17,27 @@ This project provisions an **Azure VM** and deploys **Keycloak**, **Postgres**, 
 ## Repository Structure
 .
 ├── .github/workflows/ # GitHub Actions CI/CD
+
 │ ├── deploy.yml
+
 │ └── destroy.yml
+
 ├── terraform/ # Terraform configs (VM + networking)
+
 ├── ansible/ # Ansible playbooks & roles
+
 │ ├── inventory.ini
+
 │ ├── playbook.yml
+
 │ └── roles/docker-host/
+
 │ ├── tasks/main.yml
+
 │ └── files/nginx/site/index.html
+
 ├── diagrams/ # Architecture diagram
+
 └── README.md # Project documentation
 
 
