@@ -9,7 +9,7 @@ This project provisions an **Azure VM** and deploys **Keycloak**, **Postgres**, 
 - **Configuration Management (Ansible)** – installs Docker and deploys containers  
 - **Authentication (Keycloak + Postgres)** – Keycloak for identity, Postgres as its DB  
 - **Web Server (Nginx)** – serves a static webpage  
-- **CI/CD (GitHub Actions)** – workflows for deploy and destroy  
+- **CI/CD (GitHub Actions)** – workflows for deploy and destroy  #Do note that due to timelimit on this task and my current work. i didn't had the time to finish the Github Actions setup, so I wrote a template that can be used as a starting point.
 - **Documentation** – architecture diagram, justification, and future improvements  
 
 ---
